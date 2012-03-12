@@ -1,0 +1,230 @@
+<!--@author Alex-->
+<!DOCTYPE html> 
+<html> 
+<head> 
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" /> 
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/> 
+<title>MapMail 美好你的生活</title> 
+<link href="map.css" rel="stylesheet" type="text/css" /> 
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script> 
+<script type="text/javascript"> 
+
+//针对android和iphone的屏幕调整,暂未考虑ipad平台的屏幕需求
+ function detectBrowser() {
+  var useragent = navigator.userAgent;
+  var mapdiv = document.getElementById("map_canvas");
+    
+  if (useragent.indexOf('iPhone') != -1 || useragent.indexOf('Android') != -1 ) {
+    mapdiv.style.width = '100%';
+    mapdiv.style.height = '100%';
+  } else {
+    mapdiv.style.width = '600px';
+    mapdiv.style.height = '800px';
+  }
+}
+
+//正向解析地址函数，由可读地址信息即用户输入的不精确地点，转换为经纬度信息
+ function codeAddress() {
+    var address = document.getElementById("address").value;
+    geocoder.geocode( { 'address': address}, function(results, status) {
+      if (status == google.maps.GeocoderStatus.OK) {
+        map.setCenter(results[0].geometry.location);
+	    initialLocation=results[0].geometry.location;
+		codeLatLng(initialLocation);//此处调用反向解析函数，这样实现了模糊地点到精确地点的一个转换，重要！
+      } else {
+        alert("Geocode was not successful for the following reason: " + status);
+      }
+    });
+  }
+  
+//初始化应用控件按钮函数
+function HomeControl(controlDiv, map) {
+  controlDiv.style.padding = '5px'; 
+  // Set CSS for the control border
+  var controlUI = document.createElement('DIV');
+  controlUI.style.backgroundColor = '#6950a1';
+  controlUI.style.borderWidth = '2px';
+  controlUI.style.cursor = 'pointer';
+  controlUI.style.textAlign = 'center';
+  controlUI.title = '回到原始的位置';
+  controlDiv.appendChild(controlUI);
+ 
+  // Set CSS for the control interior
+  var controlText = document.createElement('DIV');
+  controlText.style.color='white';
+  controlText.style.fontSize = '26px';
+  controlText.style.paddingLeft = '4px';
+  controlText.style.paddingRight = '4px';
+  controlText.innerHTML = '<b style=\" font-family:\'隶书\'\">个人中心</b>';
+  controlUI.appendChild(controlText);
+ 
+//事件添加列表
+  google.maps.event.addDomListener(controlUI, 'click', function() {
+  window.location.href="index.html";	
+  });
+ 
+}
+
+
+function ListControl1(controlDiv, map) {
+ 
+  controlDiv.style.padding = '5px'; 
+  // Set CSS for the control border
+  var tag1 = document.createElement('DIV');
+  tag1.style.backgroundColor = '#DB7093';
+  tag1.style.borderWidth = '2px';
+  tag1.style.cursor = 'pointer';
+  tag1.style.textAlign = 'center';
+  tag1.title = '选择约会地点';
+  controlDiv.appendChild(tag1);
+ 
+  // Set CSS for the control interior
+  var address =document.createElement('input');
+  address.id='address'
+  address.type = 'textbox';
+  address.placeholder="输入您想约会的地点";	
+  tag1.appendChild(address);
+  
+  var button = document.createElement('input');
+  button.id='button';
+  button.type='button';
+  button.onclick=codeAddress;
+  button.value='MM定位';
+  tag1.appendChild(button); 
+ 
+}
+  
+//反向地址解析获得可读的地理位置名称
+function codeLatLng(latlng) {
+	geocoder = new google.maps.Geocoder();
+    if (geocoder) {
+      geocoder.geocode({'latLng': latlng}, function(results, status) {
+        if (status == google.maps.GeocoderStatus.OK) {
+          if (results[0]) {
+            map.setZoom(16);
+            marker = new google.maps.Marker({
+                position: latlng, 
+                map: map
+            }); 
+			var address = document.getElementById("address").value;
+			//用户界面布局以及邮件发送操作
+			var stamp = "http://ditu.google.cn%2f%3fq%3d"+results[0].formatted_address;
+        	var contentStr = "<div style=\"color:#06F; font-family:Jokerman;\"><img src=\"logo.gif\"/> MapMail by Octobershiner</div>"
+                              +"<div style=\"background-color:#09F; height:1px\"></div>"
+                              +"<div style=\"color:#333; font-size:16px; font-family:\'隶书\'\">约会地点:"
+							  +results[0].formatted_address+"</div>"
+							  +"<div style=\" float:left; background-color:#F66;font-size:16px; font-family:\'隶书\';"                              +"width:auto; -webkit-border-radius:8px; \">"
+							  +"<a style=\"text-decoration: none;color:#FFF;\"href=\"mailto: ?subject=邮件来自%20MapMail%20!&body="
+							  +"MM邮局认证：来自朋友的约会邀请，时间是：%20%20%20%20%20我们就在%20%20"
+							  +address
+							  +"%20见面吧，详细的地址信息是"
+							  +results[0].formatted_address
+							  +"%20%20%20%20%20%20%20%20%20%20%20复制下面的链接到您的浏览器地址，"
+							  +"你可以在地图上看见具体位置了%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20"+stamp
+							  +"%20%20%20%20%20%20%20%20%20%20%20%20%20本约会服务由MapMail by octobershiner提供\">约会邀请</a></div>"
+							  
+                              +"<div style=\" float:left; margin-left:10px; text-align:center; background-color:#7fb80e;" 
+							  +"font-size:16px; font-family:\'隶书\'; width:2cm;-webkit-border-radius:8px; \">"
+							  +"<a style=\"text-decoration: none;color:#FFF;\"href=\"mailto: ?subject=邮件来自%20MapMail%20!&body="
+							  +"MM邮局认证：%20%20%20我们的。。。活动会在"
+							  +address
+							  +"%20进行具体的地址信息是，"
+							  +results[0].formatted_address
+							  +"欢迎大家于%20%20时间：%20%20%20%20%20%20参加%20%20%20%20%20活动，%20%20%20"
+							  +"复制下面的连接到您的浏览器地址，"
+							  +"您可以在地图上看见具体的活动地点%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20"+stamp
+							  +"%20%20%20%20%20%20%20%20%20%20%20%20%20本通知服务由MapMail by octobershiner提供\">通知</a></div>";
+//设置信息显示窗口
+            infowindow.setContent(contentStr);
+            infowindow.open(map, marker);
+          }
+        } else {
+          alert("Geocoder failed due to: " + status);
+        }
+      });
+    }
+  }
+ //定义API对象 
+var geocoder;
+var marker;
+var initialLocation;
+var beijing = new google.maps.LatLng(39.917, 116.397);
+var browserSupportFlag =  new Boolean();
+//创建地图和窗口对象
+var map;
+var infowindow = new google.maps.InfoWindow();
+  
+  
+  
+function initialize() {	
+  detectBrowser() ;
+  //设置地图的选项
+  var myOptions = {
+    zoom: 16,
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+	mapTypeControl: true,
+    mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.BOTTOM
+    }
+  };
+  map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+  
+  
+  
+  // 应用HTML 5 geolocation进行地理位置的检测
+  if(navigator.geolocation) {
+    browserSupportFlag = true;
+	
+    navigator.geolocation.getCurrentPosition(function(position) {
+	 //获取用户的经度信息
+      initialLocation = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+	  //控件布局
+     var homeControlDiv = document.createElement('DIV');
+	 var listControlDiv1 = document.createElement('DIV');
+     var homeControl = new HomeControl(homeControlDiv, map);
+	 var listControl1 = new ListControl1(listControlDiv1, map);
+ 
+     homeControlDiv.index = 1;
+	 listControlDiv1.index = 2;
+     map.controls[google.maps.ControlPosition.TOP_RIGHT].push(homeControlDiv);
+     map.controls[google.maps.ControlPosition.TOP_RIGHT].push(listControlDiv1);
+	 
+      map.setCenter(initialLocation);
+	  codeLatLng(initialLocation);
+     // infowindow.setContent(contentString);
+      //infowindow.setPosition(initialLocation);
+     // infowindow.open(map);
+	  
+    }, function() {
+      handleNoGeolocation(browserSupportFlag);
+    });
+  } 
+   else {
+    // Browser doesn't support Geolocation
+    browserSupportFlag = false;
+    handleNoGeolocation(browserSupportFlag);
+  }
+}
+ 
+ //用于处理无法获取地理位置的情况
+function handleNoGeolocation(errorFlag) {
+	contentString ="您的浏览器不支持HTML 5请手动选择您的位置";
+	if(errorFlag){
+     contentString ="定位的时候出现错误！";
+	}
+  initialLocation = beijing;
+  map.setCenter(initialLocation);
+  infowindow.setContent(contentString);
+  infowindow.setPosition(initialLocation);
+  infowindow.open(map);
+}
+</script> 
+</head> 
+<body onload="initialize()"> 
+  <div id="map_canvas">
+  </div> 
+
+
+</body> 
+</html> 
